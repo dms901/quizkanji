@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Kanji Pro - 14 Parts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #1e293b; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
+        .num-dot { min-width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .dot-active { outline: 2px solid #6366f1; outline-offset: 2px; background: white !important; color: #6366f1 !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .option-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen">
+
+    <header class="w-full max-w-md sticky top-0 z-[100] px-6 py-4 flex justify-between items-center bg-white/80 backdrop-blur-lg border-b border-slate-100">
+        <div>
+            <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">JLPT Progression</span>
+            <div class="flex items-center gap-2">
+                <select id="partSelect" onchange="changePart(this.value)" class="bg-transparent font-extrabold text-xl outline-none cursor-pointer">
+                    </select>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <div class="bg-red-50 px-3 py-1.5 rounded-xl border border-red-100 text-red-600 font-bold text-sm">
+                ❤️ <span id="livesText">10</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-md px-6 pt-6 pb-32">
+        <div class="flex gap-2 overflow-x-auto py-2 mb-6 no-scrollbar" id="numberGrid"></div>
+
+        <div id="questionCard" class="glass-card rounded-[2.5rem] p-12 flex flex-col items-center mb-6 shadow-xl shadow-slate-200/50 text-center">
+            <div id="kanjiQuestion" class="text-8xl font-black text-slate-800 tracking-tighter transition-all">?</div>
+            <div id="statusBadge" class="mt-8 px-5 py-1.5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Menunggu
+            </div>
+        </div>
+
+        <div id="optionsContainer" class="grid gap-3"></div>
+
+        <div id="explanationArea" class="hidden mt-6 bg-slate-900 rounded-[2rem] p-6 text-white shadow-lg">
+            <div class="text-[10px] font-bold text-indigo-400 uppercase mb-2 tracking-widest">Penjelasan</div>
+            <p id="explanationText" class="text-sm leading-relaxed text-slate-300"></p>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-6 w-[calc(100%-3rem)] max-w-md bg-white border border-slate-100 rounded-3xl p-3 flex justify-between items-center gap-3 shadow-2xl z-[100]">
+        <button onclick="prevQuestion()" class="w-14 h-14 flex items-center justify-center bg-slate-100 rounded-2xl text-xl">⬅️</button>
+        <button onclick="nextQuestion()" class="flex-1 h-14 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200">Lanjut</button>
+    </nav>
+
+    <script>
+        const allPartsData = {
+            1: [
+                {k:"名前", r:"なまえ", m:"Nama", e:"名 (Nama) + 前 (Depan). Digunakan untuk menanyakan nama seseorang."},
+                {k:"今日", r:"きょう", m:"Hari Ini", e:"Kombinasi 今 (sekarang) + 日 (hari). Merupakan bacaan khusus (ateji)."},
+                {k:"昨日", r:"きのう", m:"Kemarin", e:"Satu hari sebelum hari ini."},
+                {k:"明日", r:"あした", m:"Besok", e:"Satu hari setelah hari ini."},
+                {k:"私", r:"わたし", m:"Saya", e:"Kata ganti orang pertama yang paling umum."},
+                {k:"日本", r:"にほん", m:"Jepang", e:"Secara harfiah 'Asal Matahari'."},
+                {k:"先生", r:"せんせい", m:"Guru", e:"先 (sebelum) + 生 (lahir). Orang yang lahir lebih dulu/berilmu."},
+                {k:"学生", r:"がくせい", m:"Mahasiswa", e:"Orang yang belajar (学) dan hidup (生) sebagai pelajar."},
+                {k:"学校", r:"がっこう", m:"Sekolah", e:"Tempat untuk belajar (学)."},
+                {k:"日本語", r:"にほんご", m:"Bahasa Jepang", e:"Bahasa (語) yang digunakan di Jepang."},
+                {k:"本", r:"ほん", m:"Buku", e:"Juga digunakan sebagai kata bantu bilangan benda silinder."},
+                {k:"水", r:"みず", m:"Air", e:"Air mineral atau air tawar secara umum."},
+                {k:"お金", r:"おかね", m:"Uang", e:"Kanji 金 (logam/emas) dengan awalan hormat 'o'."},
+                {k:"食べる", r:"たべる", m:"Makan", e:"Kata kerja dasar untuk makan."}
+            ],
+            2: [
+                {k:"お父さん", r:"おとうさん", m:"Ayah", e:"Panggilan hormat untuk ayah."},
+                {k:"お母さん", r:"おかasan", m:"Ibu", e:"Panggilan hormat untuk ibu."},
+                {k:"友達", r:"ともだち", m:"Teman", e:"Orang yang akrab dengan kita."},
+                {k:"元気", r:"げんき", m:"Sehat/Semangat", e:"Secara harfiah 'Energi Dasar'."},
+                {k:"大きい", r:"おおきい", m:"Besar", e:"Kata sifat untuk ukuran yang besar."},
+                {k:"小さい", r:"ちいさい", m:"Kecil", e:"Kata sifat untuk ukuran yang kecil."},
+                {k:"時間", r:"じかん", m:"Waktu", e:"時 (waktu) + 間 (antara/durasi)."},
+                {k:"時計", r:"とけい", m:"Jam (Benda)", e:"Alat untuk mengukur waktu."},
+                {k:"右", r:"みぎ", m:"Kanan", e:"Arah kanan."},
+                {k:"左", r:"ひだり", m:"Kiri", e:"Arah kiri."},
+                {k:"上", r:"うえ", m:"Atas", e:"Posisi di atas."},
+                {k:"下", r:"した", m:"Bawah", e:"Posisi di bawah."},
+                {k:"中", r:"なか", m:"Dalam", e:"Posisi di tengah atau di dalam."},
+                {k:"外", r:"そと", m:"Luar", e:"Posisi di luar."}
+            ]
+            // ... (Part 3-14 bisa diisi dengan pola yang sama)
+        };
+
+        // Otomatis membuat Part 3-14 jika belum ada (untuk testing)
+        for(let p=3; p<=14; p++) {
+            allPartsData[p] = allPartsData[1].map(item => ({
+                ...item, k: item.k + ` (P${p})`, m: item.m + ` Part ${p}`
+            }));
+        }
+
+        let currentPart = 1;
+        let currentIndex = 0;
+        let lives = 10;
+        let userAnswers = {}; // Format: { "part-index": "correct/wrong" }
+
+        function init() {
+            const select = document.getElementById('partSelect');
+            for(let i=1; i<=14; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Bagian ${i}`;
+                select.appendChild(opt);
+            }
+            loadQuestion();
+        }
+
+        function changePart(val) {
+            currentPart = parseInt(val);
+            currentIndex = 0;
+            loadQuestion();
+        }
+
+        function renderNumberGrid() {
+            const grid = document.getElementById('numberGrid');
+            grid.innerHTML = '';
+            const currentData = allPartsData[currentPart];
+            
+            currentData.forEach((_, i) => {
+                const dot = document.createElement('div');
+                const state = userAnswers[`${currentPart}-${i}`];
+                let color = 'bg-slate-200 text-slate-500';
+                if(state === 'correct') color = 'bg-green-500 text-white';
+                if(state === 'wrong') color = 'bg-red-500 text-white';
+                
+                dot.className = `num-dot ${color} ${i === currentIndex ? 'dot-active' : ''}`;
+                dot.innerText = i + 1;
+                dot.onclick = () => { currentIndex = i; loadQuestion(); };
+                grid.appendChild(dot);
+            });
+        }
+
+        function loadQuestion() {
+            const data = allPartsData[currentPart][currentIndex];
+            document.getElementById('kanjiQuestion').innerText = data.k;
+            renderNumberGrid();
+            
+            const badge = document.getElementById('statusBadge');
+            const exp = document.getElementById('explanationArea');
+            const state = userAnswers[`${currentPart}-${currentIndex}`];
+
+            if(!state) {
+                badge.innerText = "Belum Dijawab";
+                badge.className = "mt-8 px-5 py-1.5 rounded-full bg-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-widest";
+                exp.classList.add('hidden');
+                generateOptions(data);
+            } else {
+                badge.innerText = state === 'correct' ? "Benar!" : "Salah";
+                badge.className = `mt-8 px-5 py-1.5 rounded-full ${state === 'correct' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} text-[10px] font-bold uppercase tracking-widest`;
+                document.getElementById('explanationText').innerText = data.e;
+                exp.classList.remove('hidden');
+                document.getElementById('optionsContainer').innerHTML = `<div class="p-8 text-center text-slate-400 font-medium italic">Sudah dijawab</div>`;
+            }
+        }
+
+        function generateOptions(correctItem) {
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            let pool = allPartsData[currentPart];
+            let opts = [{...correctItem, isCorrect: true}];
+            let wrongOnes = pool.filter(i => i.k !== correctItem.k).sort(() => 0.5 - Math.random()).slice(0, 3);
+            
+            opts.push(...wrongOnes.map(o => ({...o, isCorrect: false})));
+            opts.sort(() => 0.5 - Math.random()).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full p-5 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-start transition-all hover:border-indigo-200";
+                btn.innerHTML = `<span class="text-base font-bold text-slate-800">${opt.r}</span><span class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">${opt.m}</span>`;
+                btn.onclick = () => handleAnswer(opt.isCorrect);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(isCorrect) {
+            const key = `${currentPart}-${currentIndex}`;
+            if(isCorrect) {
+                userAnswers[key] = 'correct';
+            } else {
+                userAnswers[key] = 'wrong';
+                lives--;
+                document.getElementById('livesText').innerText = lives;
+                if(lives <= 0) alert("Nyawa habis! Coba lagi dari awal.");
+            }
+            loadQuestion();
+        }
+
+        function nextQuestion() {
+            if(currentIndex < allPartsData[currentPart].length - 1) {
+                currentIndex++;
+                loadQuestion();
+            } else {
+                alert("Bagian ini selesai! Silakan pilih bagian berikutnya di atas.");
+            }
+        }
+
+        function prevQuestion() {
+            if(currentIndex > 0) { currentIndex--; loadQuestion(); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
